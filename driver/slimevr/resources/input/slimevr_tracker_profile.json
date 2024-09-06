@@ -1,0 +1,19 @@
+{
+  "jsonid": "input_profile",
+  "input_bindingui_mode": "single_device",
+  "input_source": {
+    "/pose/raw": {
+      "type": "pose",
+      "binding_image_point": [0, 0]
+    },
+    "/input/trigger": {
+      "type": "trigger",
+      "click": true,
+      "binding_image_point": [0, 0]
+    },
+    "/output/haptic": {
+      "type": "vibration",
+      "binding_image_point": [0, 0]
+    }
+  }
+}
