@@ -24,7 +24,7 @@ void SlimeVRDriver::TrackerDevice::Update() {
     for (auto event : events) {
         // Listen for haptic events
         if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration) {
-            GetDriver()->Log("HapticX: " + serial_);
+            logger_->Log("HapticX: %s", serial_.c_str());
 
             // We now need to make sure that the event was intended for this device.
 			// So let's compare handles of the event and our haptic component
@@ -35,7 +35,11 @@ void SlimeVRDriver::TrackerDevice::Update() {
                 float duration = event.data.hapticVibration.fDurationSeconds;
                 float frequency = event.data.hapticVibration.fFrequency;
                 float amplitude = event.data.hapticVibration.fAmplitude;
-                GetDriver()->Log("Haptic for: " + serial_ + ". Duration: " + std::to_string(duration) + ", Frequency: " + std::to_string(frequency) + ", Amplitude: " + std::to_string(amplitude));
+                logger_->Log("Haptic for: %s ... Duration: %s, Frequency: %s, Amplitude: %s",
+                    serial_.c_str(),
+                    std::to_string(duration).c_str(),
+                    std::to_string(frequency).c_str(),
+                    std::to_string(amplitude).c_str());
             }
         }
 
@@ -167,10 +171,10 @@ vr::EVRInitError SlimeVRDriver::TrackerDevice::Activate(uint32_t unObjectId) {
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(device_index_);
 
     GetDriver()->GetInput()->CreateHapticComponent( props, "/output/haptic", &haptic_component_ );
-    GetDriver()->Log("Created haptic component: " + std::to_string(haptic_component_));
+    logger_->Log("Created haptic component: %s", std::to_string(haptic_component_).c_str());
 
     GetDriver()->GetInput()->CreateBooleanComponent( props,  "/input/trigger/click", &trigger_click_component_ );
-    GetDriver()->Log("Created trigger component: " + std::to_string(trigger_click_component_));
+    logger_->Log("Created trigger component: %s", std::to_string(trigger_click_component_).c_str());
     
     // Can be identified
     GetDriver()->GetProperties()->SetBoolProperty(props, vr::Prop_Identifiable_Bool, true);
@@ -201,7 +205,7 @@ vr::EVRInitError SlimeVRDriver::TrackerDevice::Activate(uint32_t unObjectId) {
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{slimevr}/icons/tracker_status_ready_low.png");
 
     GetDriver()->GetProperties()->SetStringProperty( props, vr::Prop_InputProfilePath_String, "{slimevr}/input/slimevr_tracker_profile.json" );
-    GetDriver()->Log("Set Controller Profile: {slimevr}/input/slimevr_tracker_profile.json");
+    logger_->Log("Set Controller Profile: {slimevr}/input/slimevr_tracker_profile.json");
     
     // Automatically select vive tracker roles and set hints for games that need it (Beat Saber avatar mod, for example)
     auto role_hint = GetViveRoleHint(tracker_role_);
