@@ -168,6 +168,12 @@ void SlimeVRDriver::VRDriver::RunPoseRequestThread() {
                 if (device->GetHapticsFeedbackReceived()) {
                     int device_id = device->GetDeviceId();
                     logger_->Log("HapticX received tracker %s", std::to_string(device_id).c_str());
+
+                    messages::Haptics* haptics = google::protobuf::Arena::CreateMessage<messages::Haptics>(&arena_);
+                    message->set_allocated_haptic(haptics);
+                    haptics->set_tracker_id(device_id);
+                    haptics->set_haptic_received(true);
+                    bridge_->SendBridgeMessage(*message);
                 }
             }
         }
