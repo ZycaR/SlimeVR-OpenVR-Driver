@@ -32,6 +32,7 @@ namespace SlimeVRDriver {
         virtual void PositionMessage(messages::Position &position) override;
         virtual void StatusMessage(messages::TrackerStatus &status) override;
         virtual void BatteryMessage(messages::Battery &battery) override;
+        virtual bool GetHapticsFeedbackReceived() override;
 
         // Inherited via ITrackedDeviceServerDriver
         virtual vr::EVRInitError Activate(uint32_t unObjectId) override;
@@ -55,9 +56,11 @@ namespace SlimeVRDriver {
 
         bool did_vibrate_ = false;
         float vibrate_anim_state_ = 0.f;
-
+        
+        bool haptic_received_ = false;
         vr::VRInputComponentHandle_t haptic_component_ = 0;
-        vr::VRInputComponentHandle_t system_click_component_ = 0;
-        vr::VRInputComponentHandle_t system_touch_component_ = 0;
+
+        float trigger_press_state_ = 0.f;
+        vr::VRInputComponentHandle_t trigger_click_component_ = 0;
     };
 };

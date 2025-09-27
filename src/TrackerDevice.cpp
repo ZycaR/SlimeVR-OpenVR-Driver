@@ -15,17 +15,34 @@ std::string SlimeVRDriver::TrackerDevice::GetSerial() {
 void SlimeVRDriver::TrackerDevice::Update() {
     if (device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
 
+    trigger_press_state_ += GetDriver()->GetLastFrameTime().count()/1000.f;
+    bool press_state = static_cast<int>(trigger_press_state_) % 2 != 0;
+    vr::VRDriverInput()->UpdateBooleanComponent(trigger_click_component_, press_state, 0.0);
+
     // Check if this device was asked to be identified
     auto events = GetDriver()->GetOpenVREvents();
     for (auto event : events) {
-        // Note here, event.trackedDeviceIndex does not necessarily equal device_index_, not sure why, but the component handle will match so we can just use that instead
-        //if (event.trackedDeviceIndex == device_index_) {
+        // Listen for haptic events
         if (event.eventType == vr::EVREventType::VREvent_Input_HapticVibration) {
+            logger_->Log("HapticX: %s", serial_.c_str());
+
+            // We now need to make sure that the event was intended for this device.
+			// So let's compare handles of the event and our haptic component
             if (event.data.hapticVibration.componentHandle == haptic_component_) {
+
+                // ... just store values for sending to bridge
                 did_vibrate_ = true;
+                haptic_received_ = true;
+                float duration = event.data.hapticVibration.fDurationSeconds;
+                float frequency = event.data.hapticVibration.fFrequency;
+                float amplitude = event.data.hapticVibration.fAmplitude;
+                logger_->Log("HapticX for: %s ... Duration: %s, Frequency: %s, Amplitude: %s",
+                    serial_.c_str(),
+                    std::to_string(duration).c_str(),
+                    std::to_string(frequency).c_str(),
+                    std::to_string(amplitude).c_str());
             }
         }
-        //}
     }
 
     // Check if we need to keep vibrating
@@ -104,6 +121,10 @@ void SlimeVRDriver::TrackerDevice::BatteryMessage(messages::Battery &battery) {
     vr::VRProperties()->SetFloatProperty(props, vr::Prop_DeviceBatteryPercentage_Float, battery.battery_level());
 }
 
+bool SlimeVRDriver::TrackerDevice::GetHapticsFeedbackReceived() {
+    return haptic_received_ && !(haptic_received_ = false);
+}
+
 void SlimeVRDriver::TrackerDevice::StatusMessage(messages::TrackerStatus &status) {
     if (device_index_ == vr::k_unTrackedDeviceIndexInvalid) return;
     
@@ -142,10 +163,19 @@ vr::TrackedDeviceIndex_t SlimeVRDriver::TrackerDevice::GetDeviceIndex() {
 vr::EVRInitError SlimeVRDriver::TrackerDevice::Activate(uint32_t unObjectId) {
     device_index_ = unObjectId;
 
-    logger_->Log("Activating tracker %s", serial_.c_str());
+    logger_->Log("HapticX Activating tracker %s", serial_.c_str());
 
     // Get the properties handle
     auto props = GetDriver()->GetProperties()->TrackedDeviceToPropertyContainer(device_index_);
+
+    GetDriver()->GetInput()->CreateHapticComponent( props, "/output/haptic", &haptic_component_ );
+    logger_->Log("HapticX Created haptic component: %s", std::to_string(haptic_component_).c_str());
+
+    GetDriver()->GetInput()->CreateBooleanComponent( props,  "/input/trigger/click", &trigger_click_component_ );
+    logger_->Log("HapticX Created trigger component: %s", std::to_string(trigger_click_component_).c_str());
+    
+    // Can be identified
+    GetDriver()->GetProperties()->SetBoolProperty(props, vr::Prop_Identifiable_Bool, true);
 
     // Set some universe ID (Must be 2 or higher)
     GetDriver()->GetProperties()->SetUint64Property(props, vr::Prop_CurrentUniverseId_Uint64, 4);
@@ -154,9 +184,9 @@ vr::EVRInitError SlimeVRDriver::TrackerDevice::Activate(uint32_t unObjectId) {
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_ModelNumber_String, "SlimeVR Virtual Tracker");
 
     // Opt out of hand selection
-    GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_OptOut);
-    vr::VRProperties()->SetInt32Property(props, vr::Prop_DeviceClass_Int32, vr::TrackedDeviceClass_GenericTracker);
-    vr::VRProperties()->SetInt32Property(props, vr::Prop_ControllerHandSelectionPriority_Int32, -1);
+	GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerRoleHint_Int32, vr::ETrackedControllerRole::TrackedControllerRole_OptOut);
+    GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_DeviceClass_Int32, vr::TrackedDeviceClass_GenericTracker);
+    GetDriver()->GetProperties()->SetInt32Property(props, vr::Prop_ControllerHandSelectionPriority_Int32, -1);
 
     // Set up a render model path
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_RenderModelName_String, "{htc}/rendermodels/vr_tracker_vive_1_0");
@@ -172,6 +202,9 @@ vr::EVRInitError SlimeVRDriver::TrackerDevice::Activate(uint32_t unObjectId) {
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceStandby_String, "{slimevr}/icons/tracker_status_standby.png");
     GetDriver()->GetProperties()->SetStringProperty(props, vr::Prop_NamedIconPathDeviceAlertLow_String, "{slimevr}/icons/tracker_status_ready_low.png");
 
+    GetDriver()->GetProperties()->SetStringProperty( props, vr::Prop_InputProfilePath_String, "{slimevr}/input/slimevr_tracker_profile.json" );
+    logger_->Log("HapticX Set Controller Profile: {slimevr}/input/slimevr_tracker_profile.json");
+    
     // Automatically select vive tracker roles and set hints for games that need it (Beat Saber avatar mod, for example)
     auto role_hint = GetViveRoleHint(tracker_role_);
     if (role_hint != "") {

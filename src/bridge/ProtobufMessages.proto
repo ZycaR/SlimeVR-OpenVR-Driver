@@ -110,6 +110,11 @@ message Battery {
     bool is_charging = 3;
 }
 
+message Haptics {
+    int32 tracker_id = 1;
+    bool haptic_received = 2;
+}
+
 message ProtobufMessage {
     oneof message {
         Position position = 1;
@@ -117,5 +122,6 @@ message ProtobufMessage {
         TrackerAdded tracker_added = 3;
         TrackerStatus tracker_status = 4;
         Battery battery = 5;
+        Haptics haptic = 6;
     }
 }
