@@ -10,7 +10,7 @@ namespace SlimeVRDriver {
     public:
         /**
          * Returns the serial string for this device.
-         * 
+         *
          * @return Device serial.
          */
         virtual std::string GetSerial() = 0;
@@ -24,21 +24,21 @@ namespace SlimeVRDriver {
         /**
          * Returns the OpenVR device index.
          * This should be 0 for HMDs.
-         * 
+         *
          * @returns OpenVR device index.
          */
         virtual vr::TrackedDeviceIndex_t GetDeviceIndex() = 0;
-        
+
         /**
          * Returns which type of device this device is.
-         * 
+         *
          * @returns The type of device.
          */
         virtual DeviceType GetDeviceType() = 0;
-        
+
         /**
          * Makes a default device pose.
-         * 
+         *
          * @returns Default initialised pose.
          */
         static inline vr::DriverPose_t MakeDefaultPose(bool connected = true, bool tracking = true) {
@@ -68,7 +68,7 @@ namespace SlimeVRDriver {
          * Updates device position from a received message.
         */
         virtual void PositionMessage(messages::Position& position) = 0;
-        
+
         /**
          * Updates device status from a received message.
         */
@@ -78,6 +78,13 @@ namespace SlimeVRDriver {
          * Updates battery indicator from a received message.
         */
         virtual void BatteryMessage(messages::Battery& battery) = 0;
+
+        /**
+         * Indicates if haptics feedback was received since the last update/frame.
+         *
+         * @returns True if haptics feedback was received.
+         */
+        virtual bool GetHapticsFeedbackReceived() = 0;
 
         // Inherited via ITrackedDeviceServerDriver
         virtual vr::EVRInitError Activate(uint32_t unObjectId) = 0;

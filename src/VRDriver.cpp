@@ -161,6 +161,17 @@ void SlimeVRDriver::VRDriver::RunPoseRequestThread() {
             battery_sent_at_ = now;
         }
 
+        // Update devices
+        {
+            std::lock_guard<std::mutex> lock(devices_mutex_);
+            for (auto& device : devices_) {
+                if (device->GetHapticsFeedbackReceived()) {
+                    int device_id = device->GetDeviceId();
+                    logger_->Log("HapticX received tracker %s", std::to_string(device_id).c_str());
+                }
+            }
+        }
+
         arena_.Reset();
         
         std::this_thread::sleep_for(std::chrono::milliseconds(2));

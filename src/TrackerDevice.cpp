@@ -32,6 +32,7 @@ void SlimeVRDriver::TrackerDevice::Update() {
 
                 // ... just store values for sending to bridge
                 did_vibrate_ = true;
+                haptic_received_ = true;
                 float duration = event.data.hapticVibration.fDurationSeconds;
                 float frequency = event.data.hapticVibration.fFrequency;
                 float amplitude = event.data.hapticVibration.fAmplitude;
@@ -42,13 +43,6 @@ void SlimeVRDriver::TrackerDevice::Update() {
                     std::to_string(amplitude).c_str());
             }
         }
-
-        if(event.eventType == vr::EVREventType::VREvent_Input_HapticVibration) {
-            if(event.data.hapticVibration.componentHandle == haptic_component_) {
-                did_vibrate_ = true;
-            }
-        }
-        //}
     }
 
     // Check if we need to keep vibrating
@@ -125,6 +119,10 @@ void SlimeVRDriver::TrackerDevice::BatteryMessage(messages::Battery &battery) {
     
     // Set the battery Level; 0 = 0%, 1 = 100%
     vr::VRProperties()->SetFloatProperty(props, vr::Prop_DeviceBatteryPercentage_Float, battery.battery_level());
+}
+
+bool SlimeVRDriver::TrackerDevice::GetHapticsFeedbackReceived() {
+    return haptic_received_ && !(haptic_received_ = false);
 }
 
 void SlimeVRDriver::TrackerDevice::StatusMessage(messages::TrackerStatus &status) {
